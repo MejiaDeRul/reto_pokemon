@@ -1,21 +1,47 @@
-from flask import Flask, jsonify
-import requests
+from flask import Flask, jsonify, request, render_template
 from random import randint
 import openmeteo_requests
 import requests_cache
 from retry_requests import retry
 import numpy
 from datetime import datetime, timedelta
+import os
+import requests
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'supersecretkey'
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY') or 'superjwtsecretkey'
+
+jwt = JWTManager(app)
+
+# Simular una base de datos de usuarios
+users = {"testuser": "testpassword"}
 
 # Ruta de inicio de la API
 @app.route('/')
 def home():
-    return 'Welcome Home'
+    return render_template('index.html')
+
+# Ruta para autenticación
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.json.get("username")
+    password = request.json.get("password")
+    
+    if not username or not password:
+        return jsonify({"msg": "Faltan datos"}), 400
+    
+    if users.get(username) == password:
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({"msg": "Credenciales incorrectas"}), 401
+
 
 # Obtener el tipo de un pokemon
-@app.route('/get_pokemon/<string:nombre>', methods=['GET'])
+@app.route('/pokemon/<string:nombre>', methods=['GET'])
+@jwt_required()
 def get_pokemon(nombre):
     pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{nombre}'
 
@@ -37,7 +63,8 @@ def get_pokemon(nombre):
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
     
 # Obtener un pokemon al azar de un tipo especifico 
-@app.route('/get_random_pokemon/<string:tipo>', methods=['GET'])
+@app.route('/random_pokemon/<string:tipo>', methods=['GET'])
+@jwt_required()
 def get_random_pokemon(tipo):
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
 
@@ -61,7 +88,8 @@ def get_random_pokemon(tipo):
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
 
 # Pokemon con el nombre mas largo de cierto tipo
-@app.route('/get_pokemon_long_name/<string:tipo>', methods=['GET'])
+@app.route('/pokemon_long_name/<string:tipo>', methods=['GET'])
+@jwt_required()
 def get_random_long_name(tipo):
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
 
@@ -88,7 +116,8 @@ def get_random_long_name(tipo):
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
 
 # Obtener un pokemon al azar del tipo mas fuerte en mi zona, y que tenga las letras 'i', 'a' o 'm'   
-@app.route('/get_random_better_pokemon', methods=['GET'])
+@app.route('/random_better_pokemon', methods=['GET'])
+@jwt_required()
 def get_random_better_pokemon():
     cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)

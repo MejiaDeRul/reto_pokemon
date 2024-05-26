@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask JWT Auth</title>
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem('access_token', data.access_token);
+                alert('Login successful');
+            } else {
+                alert('Login failed: ' + data.msg);
+            }
+        }
+
+        async function fetchProtectedData(endpoint) {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+            } else {
+                alert('Failed to fetch data: ' + (data.error || data.msg));
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            alert('Logout successful');
+        }
+    </script>
+</head>
+<body>
+    <h1>Flask JWT Auth</h1>
+    <div>
+        <h2>Login</h2>
+        <label for="username">Username:</label>
+        <input type="text" id="username">
+        <br>
+        <label for="password">Password:</label>
+        <input type="password" id="password">
+        <br>
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+    </div>
+    <div>
+        <h2>Fetch Protected Data</h2>
+        <div>
+            <label for="pokemonName">Pokemon Name:</label>
+            <input type="text" id="pokemonName">
+            <button onclick="fetchProtectedData('/pokemon/' + document.getElementById('pokemonName').value)">Get Pokemon</button>
+        </div>
+        <div>
+            <label for="pokemonType">Pokemon Type:</label>
+            <input type="text" id="pokemonType">
+            <button onclick="fetchProtectedData('/random_pokemon/' + document.getElementById('pokemonType').value)">Get Random Pokemon by Type</button>
+        </div>
+        <div>
+            <label for="longNameType">Long Name Type:</label>
+            <input type="text" id="longNameType">
+            <button onclick="fetchProtectedData('/pokemon_long_name/' + document.getElementById('longNameType').value)">Get Long Name Pokemon by Type</button>
+        </div>
+        <div>
+            <button onclick="fetchProtectedData('/random_better_pokemon')">Get Better Pokemon</button>
+        </div>
+    </div>
+    <pre id="result"></pre>
+</body>
+</html>

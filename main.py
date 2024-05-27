@@ -1,4 +1,9 @@
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, redirect, url_for
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_mail import Mail, Message
+from pymongo import MongoClient
+from werkzeug.security import generate_password_hash, check_password_hash
+import requests
 from random import randint
 import openmeteo_requests
 import requests_cache
@@ -6,14 +11,28 @@ from retry_requests import retry
 import numpy
 from datetime import datetime, timedelta
 import os
-import requests
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
+
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+app.config['MONGO_URI'] = 'mongodb://pokeadmin:testpassword@localhost:27017/?authSource=admin'
+app.config['MAIL_SERVER'] = 'smtp.office365.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASSWORD')
 
 jwt = JWTManager(app)
+mail = Mail(app)
+
+client = MongoClient(app.config['MONGO_URI'])
+db = client.get_database('pokemons')
+collection = db.usuarios
 
 # Simular una base de datos de usuarios
 users = {"testuser": "testpassword"}
@@ -23,20 +42,86 @@ users = {"testuser": "testpassword"}
 def home():
     return render_template('index.html')
 
+@app.route('/register', methods=['POST'])
+def register():
+    nombre = request.json.get('nombre', None)
+    usuario = request.json.get('usuario', None)
+    contrasena = request.json.get('contrasena', None)
+    correo = request.json.get('correo', None)
+
+    if not nombre or not usuario or not contrasena or not correo:
+        return jsonify({"msg": "Todos los campos son requeridos"}), 400
+
+    if collection.find_one({"usuario": usuario}):
+        return jsonify({"msg": "El usuario ya existe"}), 400
+
+    hashed_password = generate_password_hash(contrasena)
+    user = {
+        "nombre": nombre,
+        "usuario": usuario,
+        "contrasena": hashed_password,
+        "correo": correo
+    }
+
+    collection.insert_one(user)
+    return jsonify({"msg": "Registro exitoso"}), 201
+
+
 # Ruta para autenticación
 @app.route('/login', methods=['POST'])
 def login():
-    username = request.json.get("username")
-    password = request.json.get("password")
+    usuario = request.json.get("usuario")
+    contrasena = request.json.get("contrasena")
     
-    if not username or not password:
+    if not usuario or not contrasena:
         return jsonify({"msg": "Faltan datos"}), 400
     
-    if users.get(username) == password:
-        access_token = create_access_token(identity=username)
-        return jsonify(access_token=access_token), 200
-    else:
-        return jsonify({"msg": "Credenciales incorrectas"}), 401
+    user = collection.find_one({'usuario': usuario})
+    if not user or not check_password_hash(user['contrasena'], contrasena):
+        return jsonify({"msg": "Usuario o contraseña incorrectos"}), 401
+
+    otp = randint(100000, 999999)
+    user['otp'] = otp
+    collection.update_one({'_id': user['_id']}, {'$set': {'otp': otp}})
+
+    try:
+        send_otp_email(user['correo'], otp)
+    except Exception as e:
+        return jsonify({"msg": f"Error enviando el correo: {str(e)}"}), 500
+
+    return jsonify({"msg": "OTP enviado a tu correo"}), 200
+
+def send_otp_email(correo, otp):
+    msg = MIMEMultipart()
+    msg.attach(MIMEText(f'Tu código OTP es {otp}. Expira en 10 minutos.', 'plain'))
+    msg['Subject'] = 'Your OTP Code'
+    msg['From'] = app.config['MAIL_USERNAME']
+    msg['To'] = correo
+
+    try:
+        with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+            server.starttls()
+            server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+            server.sendmail(app.config['MAIL_USERNAME'], [correo], msg.as_string())
+            server.quit()
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+@app.route('/verify_otp', methods=['POST'])
+def verify_otp():
+    usuario = request.json.get('usuario', None)
+    otp = request.json.get('otp', None)
+
+    if not usuario or not otp:
+        return jsonify({"msg": "Todos los campos son requeridos"}), 400
+
+    user = collection.find_one({"usuario": usuario})
+    if not user or 'otp' not in user or user['otp'] != int(otp):
+        return jsonify({"msg": "OTP incorrecto"}), 401
+
+    access_token = create_access_token(identity=usuario, expires_delta=timedelta(hours=1))
+    collection.update_one({'_id': user['_id']}, {'$unset': {'otp': ""}})
+    return jsonify(access_token=access_token), 200
 
 
 # Obtener el tipo de un pokemon
@@ -61,7 +146,8 @@ def get_pokemon(nombre):
     
     except Exception as err:
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
-    
+
+
 # Obtener un pokemon al azar de un tipo especifico 
 @app.route('/random_pokemon/<string:tipo>', methods=['GET'])
 @jwt_required()
@@ -86,6 +172,7 @@ def get_random_pokemon(tipo):
     
     except Exception as err:
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
+
 
 # Pokemon con el nombre mas largo de cierto tipo
 @app.route('/pokemon_long_name/<string:tipo>', methods=['GET'])
@@ -114,6 +201,7 @@ def get_random_long_name(tipo):
     
     except Exception as err:
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
+
 
 # Obtener un pokemon al azar del tipo mas fuerte en mi zona, y que tenga las letras 'i', 'a' o 'm'   
 @app.route('/random_better_pokemon', methods=['GET'])

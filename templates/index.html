@@ -5,10 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flask JWT Auth</title>
     <script>
+        function showElement(elementId) {
+            document.getElementById(elementId).style.display = 'block';
+        }
+
+        function hideElement(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        function checkLoginStatus() {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                hideElement('loginForm');
+                showElement('protectedData');
+            } else {
+                showElement('loginForm');
+                hideElement('protectedData');
+            }
+        }
+
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+
             const response = await fetch('/login', {
                 method: 'POST',
                 headers: {
@@ -16,17 +35,18 @@
                 },
                 body: JSON.stringify({ username, password })
             });
-            
+
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem('access_token', data.access_token);
                 alert('Login successful');
+                checkLoginStatus();
             } else {
                 alert('Login failed: ' + data.msg);
             }
         }
 
-        async function fetchProtectedData(endpoint) {
+        async function fetchProtectedData(endpoint, inputId) {
             const token = localStorage.getItem('access_token');
             if (!token) {
                 alert('Please login first');
@@ -43,6 +63,7 @@
             const data = await response.json();
             if (response.ok) {
                 document.getElementById('result').innerText = JSON.stringify(data, null, 2);
+                document.getElementById(inputId).value = '';  // Limpiar el campo de entrada
             } else {
                 alert('Failed to fetch data: ' + (data.error || data.msg));
             }
@@ -51,12 +72,16 @@
         function logout() {
             localStorage.removeItem('access_token');
             alert('Logout successful');
+            checkLoginStatus();
         }
+
+        window.onload = checkLoginStatus;
     </script>
 </head>
 <body>
     <h1>Flask JWT Auth</h1>
-    <div>
+
+    <div id="loginForm">
         <h2>Login</h2>
         <label for="username">Username:</label>
         <input type="text" id="username">
@@ -65,29 +90,31 @@
         <input type="password" id="password">
         <br>
         <button onclick="login()">Login</button>
-        <button onclick="logout()">Logout</button>
     </div>
-    <div>
+
+    <div id="protectedData" style="display:none;">
+        <button onclick="logout()">Logout</button>
         <h2>Fetch Protected Data</h2>
         <div>
             <label for="pokemonName">Pokemon Name:</label>
             <input type="text" id="pokemonName">
-            <button onclick="fetchProtectedData('/pokemon/' + document.getElementById('pokemonName').value)">Get Pokemon</button>
+            <button onclick="fetchProtectedData('/pokemon/' + document.getElementById('pokemonName').value, 'pokemonName')">Get Pokemon</button>
         </div>
         <div>
             <label for="pokemonType">Pokemon Type:</label>
             <input type="text" id="pokemonType">
-            <button onclick="fetchProtectedData('/random_pokemon/' + document.getElementById('pokemonType').value)">Get Random Pokemon by Type</button>
+            <button onclick="fetchProtectedData('/random_pokemon/' + document.getElementById('pokemonType').value, 'pokemonType')">Get Random Pokemon by Type</button>
         </div>
         <div>
             <label for="longNameType">Long Name Type:</label>
             <input type="text" id="longNameType">
-            <button onclick="fetchProtectedData('/pokemon_long_name/' + document.getElementById('longNameType').value)">Get Long Name Pokemon by Type</button>
+            <button onclick="fetchProtectedData('/pokemon_long_name/' + document.getElementById('longNameType').value, 'longNameType')">Get Long Name Pokemon by Type</button>
         </div>
         <div>
-            <button onclick="fetchProtectedData('/random_better_pokemon')">Get Better Pokemon</button>
+            <button onclick="fetchProtectedData('/random_better_pokemon', '')">Get Better Pokemon</button>
         </div>
     </div>
+
     <pre id="result"></pre>
 </body>
 </html>

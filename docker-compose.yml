@@ -17,6 +17,12 @@ services:
       - 5000:5000
     depends_on:
       - monguito
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - MONGO_URI=${MONGO_URI}
     volumes:
       - ./:/app
 

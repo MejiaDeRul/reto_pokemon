@@ -18,7 +18,7 @@ app = Flask(__name__, template_folder='templates')
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config['MONGO_URI'] = 'mongodb://pokeadmin:testpassword@monguito:27017/?authSource=admin'
+app.config['MONGO_URI'] = os.environ.get('MONGO_URI')
 app.config['MAIL_SERVER'] = 'smtp.office365.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -307,3 +307,7 @@ def get_random_better_pokemon():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+
+# ? Nota: Hay que cambiar la temperatura del promedio a la actual
+# ?       Si es posible hacer que cambie la ubicacion con alguna funcion de gps

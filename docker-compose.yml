@@ -1,6 +1,6 @@
-version: '3.8'
+version: '4.3'
 services:
-  mongo: 
+  monguito: 
     image: mongo:7.0
     environment:
       MONGO_INITDB_ROOT_USERNAME: pokeadmin
@@ -9,6 +9,18 @@ services:
       - 27017:27017
     volumes:
       - mongodata:/data/db
+
+  flaskapp:
+    build: .
+    container_name: flaskapp
+    ports:
+      - 5000:5000
+    depends_on:
+      - monguito
+    env_file:
+      - .env
+    volumes:
+      - ./:/app
+
 volumes:
   mongodata:
-    driver: local

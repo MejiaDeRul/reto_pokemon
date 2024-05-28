@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request, render_template, redirect, url_for
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
-from flask_mail import Mail, Message
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 import requests
@@ -15,11 +14,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config['MONGO_URI'] = 'mongodb://pokeadmin:testpassword@localhost:27017/?authSource=admin'
+app.config['MONGO_URI'] = 'mongodb://pokeadmin:testpassword@monguito:27017/?authSource=admin'
 app.config['MAIL_SERVER'] = 'smtp.office365.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -28,14 +27,10 @@ app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
 app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASSWORD')
 
 jwt = JWTManager(app)
-mail = Mail(app)
 
 client = MongoClient(app.config['MONGO_URI'])
 db = client.get_database('pokemons')
 collection = db.usuarios
-
-# Simular una base de datos de usuarios
-users = {"testuser": "testpassword"}
 
 # Ruta de inicio de la API
 @app.route('/')
@@ -49,41 +44,76 @@ def register():
     contrasena = request.json.get('contrasena', None)
     correo = request.json.get('correo', None)
 
-    if not nombre or not usuario or not contrasena or not correo:
+    if not all([nombre, usuario, contrasena, correo]):
         return jsonify({"msg": "Todos los campos son requeridos"}), 400
 
     if collection.find_one({"usuario": usuario}):
         return jsonify({"msg": "El usuario ya existe"}), 400
 
     hashed_password = generate_password_hash(contrasena)
+    codigo_verificacion = str(randint(100000, 999999))
+
     user = {
         "nombre": nombre,
         "usuario": usuario,
         "contrasena": hashed_password,
-        "correo": correo
+        "correo": correo,
+        "correo_verificado": False,
+        "codigo_verificacion": codigo_verificacion
     }
 
     collection.insert_one(user)
+    send_verification_email(correo, usuario, codigo_verificacion)
+
     return jsonify({"msg": "Registro exitoso"}), 201
 
+def send_verification_email(correo, usuario, codigo_verificacion):
+    verification_link = url_for('verify_email', usuario=usuario, codigo=codigo_verificacion, _external=True)
+    
+    msg = MIMEMultipart()
+    msg.attach(MIMEText(f'Hola {usuario}, haz clic en este enlace para verificar tu correo electrónico: {verification_link}', 'plain'))
+    msg['Subject'] = 'Verifica tu correo electrónico'
+    msg['From'] = app.config['MAIL_USERNAME']
+    msg['To'] = correo
+
+    try:
+        with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+            server.starttls()
+            server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
+            server.sendmail(app.config['MAIL_USERNAME'], [correo], msg.as_string())
+            server.quit()
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+@app.route('/verify_email/<string:usuario>/<string:codigo>', methods=['GET'])
+def verify_email(usuario, codigo):
+    user = collection.find_one({"usuario": usuario})
+    if user and user.get('codigo_verificacion') == codigo:
+        collection.update_one({'_id': user['_id']}, {'$set': {'correo_verificado': True}, '$unset': {'codigo_verificacion': ""}})
+        return jsonify({"msg": "Correo electrónico verificado exitosamente"}), 200
+    else:
+        return jsonify({"msg": "Error de verificación de correo electrónico"}), 400
 
 # Ruta para autenticación
 @app.route('/login', methods=['POST'])
 def login():
-    usuario = request.json.get("usuario")
-    contrasena = request.json.get("contrasena")
-    
+    data = request.json
+    usuario = data.get('usuario', None)
+    contrasena = data.get('contrasena', None)
+
     if not usuario or not contrasena:
-        return jsonify({"msg": "Faltan datos"}), 400
-    
-    user = collection.find_one({'usuario': usuario})
+        return jsonify({"msg": "Todos los campos son requeridos"}), 400
+
+    user = collection.find_one({"usuario": usuario})
     if not user or not check_password_hash(user['contrasena'], contrasena):
         return jsonify({"msg": "Usuario o contraseña incorrectos"}), 401
+
+    if not user['correo_verificado']:
+        return jsonify({"msg": "Por favor, verifica tu correo electrónico"}), 403
 
     otp = randint(100000, 999999)
     user['otp'] = otp
     collection.update_one({'_id': user['_id']}, {'$set': {'otp': otp}})
-
     try:
         send_otp_email(user['correo'], otp)
     except Exception as e:
@@ -276,4 +306,4 @@ def get_random_better_pokemon():
     
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

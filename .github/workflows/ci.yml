@@ -1,27 +1,12 @@
-name: CI/CD Pipeline
+name: Esconder informacion sensible
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: push
 
 jobs:
-  build:
+  secret-token:
     runs-on: ubuntu-latest
 
-    env:
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
-      EMAIL_USER: ${{ secrets.EMAIL_USER }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      MONGO_URI: ${{ secrets.MONGO_URI }}
-
     steps:
-    - shell: cmd
-      env:
-        SUPER_SECRET: ${{ secrets.SECRET_KEY }}
-      run: |
-        example-command "%SECRET_KEY%"
+    - name: echo a un secreto
+      run: echo "La informacion es secreta"
+    

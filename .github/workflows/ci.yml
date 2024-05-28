@@ -20,17 +20,8 @@ jobs:
       MONGO_URI: ${{ secrets.MONGO_URI }}
 
     steps:
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-
-    - name: Install Docker
+    - shell: cmd
+      env:
+        SUPER_SECRET: ${{ secrets.SECRET_KEY }}
       run: |
-        sudo apt-get update
-        sudo apt-get install -y docker.io docker-compose
-
-    - name: Build and run Docker container with Docker Compose
-      run: |
-        docker-compose build
-        docker-compose up -d
+        example-command "%SECRET_KEY%"

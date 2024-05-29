@@ -11,6 +11,7 @@ from random import randint # Generador de numeros enteros aleatorios
 from geopy.geocoders import Nominatim # Libreria para localizacion geografica
 from datetime import datetime, timedelta # Libreria para saber fecha actual
 import os # Libreria para manejo del sistema operativo
+import logging # Libreria para hacer registros tipo log
 
 # Librerias para usar la API Open-Meteo
 import openmeteo_requests
@@ -38,6 +39,8 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER') # Configurarlo 
 jwt = JWTManager(app) # Instanciar jwt, usado para generar los tokens
 mail = Mail(app) # Instanciar mail para mandar correos con flask
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s') # Configurar logging
+
 client = MongoClient(app.config['MONGO_URI']) # Crear cliente para conectar con cluster de mongo
 db = client.get_database('pokemons') # Usar la base llamada 'pokemons'
 collection = db.usuarios  # Usar la coleccion 'usuarios' 
@@ -57,6 +60,14 @@ def home():
 # Ruta para registrar usuarios
 @app.route('/register', methods=['POST'])
 def register():
+    logger = logging.getLogger('register_logs.log')
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler(os.path.join('logs', 'register_logs.log'))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    logger.info('Inicio de registro de usuario')
     # Extraer datos solicitados para registrar un usuario 
     nombre = request.json.get('nombre', None)
     usuario = request.json.get('usuario', None)
@@ -66,14 +77,21 @@ def register():
 
     # Verificar que no falte ninguno de los datos
     if not all([nombre, usuario, contrasena, conf_contrasena, correo]):
+        logger.info('No se han llenado todos los campos, fin de registro')
         return jsonify({'msg': "Todos los campos son requeridos"}), 400
     
     if contrasena != conf_contrasena:
+        logger.info('Las contraseñas no coinciden, fin de registro')
         return jsonify({'msg': "Las contraseñas no coinciden"}), 400
 
-    # Verificar que el usuario que se quiere crear no este en la base de datos
-    if collection.find_one({'usuario': usuario}) or collection.find_one({'correo': correo}):
-        return jsonify({'msg': 'El usuario ya existe'}), 400
+    try:
+        # Verificar que el usuario que se quiere crear no este en la base de datos
+        if collection.find_one({'usuario': usuario}) or collection.find_one({'correo': correo}):
+            logger.info('El usuario ya existe, fin de registro')
+            return jsonify({'msg': 'El usuario ya existe'}), 400
+    except Exception as err:
+        logger.error(f'Fin de registro por error: {err}')
+        return jsonify({'msg': f'Error: {err}'}), 400
 
     # Hacer hash a contraseña ingresada 
     hashed_password = generate_password_hash(contrasena)
@@ -91,10 +109,16 @@ def register():
         'codigo_verificacion': hashed_cv
     }
     # Agregar nuevo usuario y enviar codigo de verificacion al correo
-    collection.insert_one(user)
-    send_verification_email(correo, usuario, codigo_verificacion)
-
-    return jsonify({'msg': 'Registro exitoso'}), 201
+    try:
+        collection.insert_one(user)
+        logger.info('Nuevo usuario creado')
+        send_verification_email(correo, usuario, codigo_verificacion)
+        logger.info('Correo de verificacion enviado')
+        logger.info('Fin de registro de usuario')
+        return jsonify({'msg': 'Registro exitoso'}), 201
+    except Exception as err:
+        logger.error(f'Fin de registro por error: {err}')
+        return jsonify({'msg': f'Error: {err}'}), 400
 
 # Funcion para enviar url para verificar correo
 def send_verification_email(correo, usuario, codigo_verificacion):
@@ -119,15 +143,30 @@ def send_verification_email(correo, usuario, codigo_verificacion):
 # Ruta para verificar correo de usuario recien creado
 @app.route('/verify_email/<string:usuario>/<string:codigo>', methods=['GET'])
 def verify_email(usuario, codigo):
-    # Extraer el usuario de la db
-    user = collection.find_one({'usuario': usuario})
-    # Verificar si es el codigo de verificacion
-    if user and check_password_hash(user.get('codigo_verificacion'), codigo):
-        # Cambiar estado a verificado
-        collection.update_one({'_id': user['_id']}, {'$set': {'correo_verificado': True}, '$unset': {'codigo_verificacion': ''}})
-        return 'Correo verificado exitosamente', 200
-    else:
-        return 'Error al verificar el correo', 400
+    logger = logging.getLogger('register_logs.log')
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler(os.path.join('logs', 'register_logs.log'))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    logger.info('Inicio de verificacion de correo de usuario nuevo')
+    try:
+        # Extraer el usuario de la db
+        user = collection.find_one({'usuario': usuario})
+        # Verificar si es el codigo de verificacion
+        if user and check_password_hash(user.get('codigo_verificacion'), codigo):
+            # Cambiar estado a verificado
+            collection.update_one({'_id': user['_id']}, {'$set': {'correo_verificado': True}, '$unset': {'codigo_verificacion': ''}})
+            logger.info('Correo verificado exitosamente')
+            logger.info('Fin de verificacion de correo')
+            return 'Correo verificado exitosamente', 200
+        else:
+            logger.error(f'Error verificando correo, posible codigo incorrecto')
+            return 'Error al verificar el correo', 400
+    except Exception as err:
+        logger.error(f'Fin de registro por error: {err}')
+        return jsonify({'msg': f'Error: {err}'}), 400
 
 #┬  ┌─┐┌─┐┬┌┐┌
 #│  │ ││ ┬││││
@@ -135,34 +174,53 @@ def verify_email(usuario, codigo):
 # Ruta para autenticación de usuario
 @app.route('/login', methods=['POST'])
 def login():
+    logger = logging.getLogger('login_logs.log')
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler(os.path.join('logs', 'login_logs.log'))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
     # Extraer datos para iniciar sesion
     data = request.json
     usuario = data.get('usuario', None)
     contrasena = data.get('contrasena', None)
+    logger.info(f'Intento de inicio de sesion por parte de {usuario}')
 
     # Verificar que no falten datos
     if not usuario or not contrasena:
+        logger.info('No se han llenado todos los campos, fin de registro')
         return jsonify({'msg': 'Todos los campos son requeridos'}), 400
 
-    # Verificar si existe usuario y si su contrasena es correcta
-    user = collection.find_one({'usuario': usuario})
-    if not user or not check_password_hash(user['contrasena'], contrasena):
-        return jsonify({'msg': 'Usuario o contraseña incorrectos'}), 401
+    try:
+        # Verificar si existe usuario y si su contrasena es correcta
+        user = collection.find_one({'usuario': usuario})
+        if not user or not check_password_hash(user['contrasena'], contrasena):
+            logger.info('Fin de inicio de sesion por usuario o contrasena incorrectos')
+            return jsonify({'msg': 'Usuario o contraseña incorrectos'}), 401
+    except Exception as err:
+        logger.error(f'Fin de inicio de sesion por error: {err}')
+        return jsonify({'msg': f'Error: {err}'}), 400
 
     # Verificar que el usuario tiene verificado su correo
     if not user['correo_verificado']:
+        logger.info('Fin de inicio de sesion por correo no verificado')
         return jsonify({'msg': 'Por favor, verifica tu correo electrónico'}), 403
 
     # Generar OTP y hacerle hash
     otp = str(randint(100000, 999999))
     hashed_otp = generate_password_hash(otp)
-    # Guardar OTP
-    collection.update_one({'_id': user['_id']}, {'$set': {'otp': hashed_otp}})
-    # Enviar OTP a correo
     try:
+        # Guardar OTP
+        collection.update_one({'_id': user['_id']}, {'$set': {'otp': hashed_otp}})
+        logger.info('Codigo OTP generado')
+        # Enviar OTP a correo
         send_otp_email(user['correo'], otp)
-    except Exception as e:
-        return jsonify({"msg": f"Error enviando el correo: {str(e)}"}), 500
+        logger.info('Correo con codigo enviado')
+        logger.info('A espera de verificacion de codigo OTP')
+    except Exception as err:
+        logger.error(f'Fin de inicio de sesion por error: {err}')
+        return jsonify({"msg": f"Error enviando el correo: {err}"}), 500
 
     return jsonify({"msg": "OTP enviado a tu correo"}), 200
 
@@ -182,23 +240,44 @@ def send_otp_email(correo, otp):
 # Ruta para verificar si es correcto el codigo OTP
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
+    logger = logging.getLogger('login_logs.log')
+    logger.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler(os.path.join('logs', 'login_logs.log'))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
     # Extraer datos
     usuario = request.json.get('usuario', None)
     otp = request.json.get('otp', None)
+    logger.info(f'Inicio de verificacion de codigo OTP por parte de usuario {usuario}')
 
     # Verificar que no falten datos
     if not usuario or not otp:
+        logger.info('Campos no ingresados')
         return jsonify({"msg": "Todos los campos son requeridos"}), 400
 
-    # Verificar si el codigo OTP es correcto
-    user = collection.find_one({"usuario": usuario})
-    if not user or 'otp' not in user or not check_password_hash(user['otp'], otp):
-        return jsonify({"msg": "OTP incorrecto"}), 401
+    try:
+        # Verificar si el codigo OTP es correcto
+        user = collection.find_one({"usuario": usuario})
+        if not user or 'otp' not in user or not check_password_hash(user['otp'], otp):
+            logger.info('Codigo ingresado es incorrecto')
+            return jsonify({"msg": "OTP incorrecto"}), 401
+        logger.info('Verificaicon exitosa')
+    except Exception as err:
+        logger.error(f'Fin de verificacion por error: {err}')
+        return jsonify({"msg": f"Error enviando el correo: {err}"}), 500
 
-    # Crear el token JWT para acceder a la API
-    access_token = create_access_token(identity=usuario, expires_delta=timedelta(hours=1)) # la session dura 1 hora
-    collection.update_one({'_id': user['_id']}, {'$unset': {'otp': ""}}) # eliminar el codigo OTP del usuario
-    return jsonify(access_token=access_token), 200
+    try:
+        # Crear el token JWT para acceder a la API
+        access_token = create_access_token(identity=usuario, expires_delta=timedelta(hours=1)) # la session dura 1 hora
+        collection.update_one({'_id': user['_id']}, {'$unset': {'otp': ""}}) # eliminar el codigo OTP del usuario
+        logger.info('Token de acceso creado')
+        logger.info('Fin de inicio de sesion y verificacion')
+        return jsonify(access_token=access_token), 200
+    except Exception as err:
+        logger.error(f'Fin de verificacion por error: {err}')
+        return jsonify({"msg": f"Error enviando el correo: {err}"}), 500
 
 
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┬ ┬┌┐┌┌─┐

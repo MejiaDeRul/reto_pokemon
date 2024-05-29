@@ -1,0 +1,18 @@
+2024-05-29 05:47:14,243 INFO Inicio de registro de usuario
+2024-05-29 05:47:17,581 INFO Correo de verificacion enviado
+2024-05-29 05:47:17,582 INFO Nuevo usuario creado
+2024-05-29 05:47:17,583 INFO Fin de registro de usuario
+2024-05-29 05:47:17,585 INFO 172.23.0.1 - - [29/May/2024 05:47:17] "[35m[1mPOST /register HTTP/1.1[0m" 201 -
+2024-05-29 05:48:19,781 INFO  * Detected change in '/app/main.py', reloading
+2024-05-29 05:49:19,284 INFO Inicio de registro de usuario
+2024-05-29 05:49:19,753 INFO Nuevo usuario creado
+2024-05-29 05:49:22,612 INFO Correo de verificacion enviado
+2024-05-29 05:49:22,613 INFO Fin de registro de usuario
+2024-05-29 05:49:22,616 INFO 172.23.0.1 - - [29/May/2024 05:49:22] "[35m[1mPOST /register HTTP/1.1[0m" 201 -
+2024-05-29 05:52:18,968 INFO  * Detected change in '/app/main.py', reloading
+2024-05-29 05:55:31,201 - register_logs.log - INFO - Inicio de registro de usuario
+2024-05-29 05:55:31,650 - register_logs.log - INFO - Nuevo usuario creado
+2024-05-29 05:55:34,742 - register_logs.log - INFO - Fin de registro de usuario
+2024-05-29 05:59:55,143 - register_logs.log - INFO - Inicio de verificacion de correo de usuario nuevo
+2024-05-29 05:59:55,502 - register_logs.log - INFO - Correo verificado exitosamente
+2024-05-29 05:59:55,503 - register_logs.log - INFO - Fin de verificacion de correo

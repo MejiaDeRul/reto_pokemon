@@ -1,0 +1,12 @@
+2024-05-29 06:14:47,504 - login_logs.log - INFO - Intento de inicio de sesion por parte de mejia123
+2024-05-29 06:14:47,954 - login_logs.log - INFO - Codigo OTP generado
+2024-05-29 06:14:50,779 - login_logs.log - INFO - Correo con codigo enviado
+2024-05-29 06:14:50,780 - login_logs.log - INFO - A espera de verificacion de codigo OTP
+2024-05-29 06:15:07,094 - login_logs.log - INFO - Inicio de verificacion de codigo OTP por parte de usuario mejia123
+2024-05-29 06:15:07,094 - login_logs.log - INFO - Inicio de verificacion de codigo OTP por parte de usuario mejia123
+2024-05-29 06:15:07,317 - login_logs.log - INFO - Verificaicon exitosa
+2024-05-29 06:15:07,317 - login_logs.log - INFO - Verificaicon exitosa
+2024-05-29 06:15:07,322 - login_logs.log - INFO - Token de acceso creado
+2024-05-29 06:15:07,322 - login_logs.log - INFO - Token de acceso creado
+2024-05-29 06:15:07,324 - login_logs.log - INFO - Fin de inicio de sesion y verificacion
+2024-05-29 06:15:07,324 - login_logs.log - INFO - Fin de inicio de sesion y verificacion

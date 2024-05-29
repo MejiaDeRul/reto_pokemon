@@ -39,7 +39,8 @@ app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER') # Configurarlo 
 jwt = JWTManager(app) # Instanciar jwt, usado para generar los tokens
 mail = Mail(app) # Instanciar mail para mandar correos con flask
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s') # Configurar logging
+logging.basicConfig(filename='logs/logs.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s') # Configurar logging
+logger = logging.getLogger(__name__)
 
 client = MongoClient(app.config['MONGO_URI']) # Crear cliente para conectar con cluster de mongo
 db = client.get_database('pokemons') # Usar la base llamada 'pokemons'
@@ -60,13 +61,6 @@ def home():
 # Ruta para registrar usuarios
 @app.route('/register', methods=['POST'])
 def register():
-    logger = logging.getLogger('register_logs.log')
-    logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler(os.path.join('logs', 'register_logs.log'))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     logger.info('Inicio de registro de usuario')
     # Extraer datos solicitados para registrar un usuario 
     nombre = request.json.get('nombre', None)
@@ -143,13 +137,6 @@ def send_verification_email(correo, usuario, codigo_verificacion):
 # Ruta para verificar correo de usuario recien creado
 @app.route('/verify_email/<string:usuario>/<string:codigo>', methods=['GET'])
 def verify_email(usuario, codigo):
-    logger = logging.getLogger('register_logs.log')
-    logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler(os.path.join('logs', 'register_logs.log'))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     logger.info('Inicio de verificacion de correo de usuario nuevo')
     try:
         # Extraer el usuario de la db
@@ -174,13 +161,6 @@ def verify_email(usuario, codigo):
 # Ruta para autenticación de usuario
 @app.route('/login', methods=['POST'])
 def login():
-    logger = logging.getLogger('login_logs.log')
-    logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler(os.path.join('logs', 'login_logs.log'))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     # Extraer datos para iniciar sesion
     data = request.json
     usuario = data.get('usuario', None)
@@ -240,13 +220,6 @@ def send_otp_email(correo, otp):
 # Ruta para verificar si es correcto el codigo OTP
 @app.route('/verify_otp', methods=['POST'])
 def verify_otp():
-    logger = logging.getLogger('login_logs.log')
-    logger.setLevel(logging.DEBUG)
-    file_handler = logging.FileHandler(os.path.join('logs', 'login_logs.log'))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
     # Extraer datos
     usuario = request.json.get('usuario', None)
     otp = request.json.get('otp', None)
@@ -289,27 +262,35 @@ def verify_otp():
 def get_pokemon(nombre):
     # URL de pokeapi
     pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{nombre}'
+    logger.info('Inicio de obtener el tipo de un pokemon')
 
     try:
         # Obetener la info del pokemon
         response = requests.get(pokemon_url)
+        logger.info(f'Informacion de pokemon {nombre} obtenida exitosamente')
         # Extraer sus tipos o tipo
         tipos = response.json()['types']
+        logger.info('Tipo extraido')
         # devolver el nombre del pokemon y sus tipos
+        logger.info('Fin del proceso')
         return {'pokemon': nombre, 'tipos': [tipo['type']['name'] for tipo in tipos]}, response.status_code
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
+        logger.error(f'Interrupcion por error HTTP: {http_err}')
         return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
     
     except requests.exceptions.JSONDecodeError as json_err:
+        logger.error(f'Interrupcion por error en JSON: {json_err}')
         return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
     
     except requests.exceptions.RequestException as req_err:
+        logger.error(f'Interrupcion por error en Request: {req_err}')
         return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
     
     # Notificar otros errores
     except Exception as err:
+        logger.error(f'Interrupcion por error: {err}')
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
 
 
@@ -322,31 +303,40 @@ def get_pokemon(nombre):
 def get_random_pokemon(tipo):
     # URL de pokeapi
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
+    logger.info('Inicio de obtener pokemon aleatorio')
 
     try:
         # Obetener la info del tipo
         response = requests.get(pokemon_url)
+        logger.info('Informacion obtenida exitosamente')
         # extraer solo los pokemons 
         pokemons = response.json()['pokemon']
+        logger.info('Pokemons extraidos')
+
         # Generar un numero aleatorio entre 0 y el total de pokemons por ese tipo, este sera el pokemon aleatorio
         rn = randint(0, len(list(pokemons))-1) 
-        
+        logger.info('Fin del proceso con pokemon aleatorio')
+
         # NOTA: en la seccion type de la api hay mucha mas informacion como las diferencias de un solo pokemon en cada version, 
         #       por eso se accede a tantos diccionarios solo para obtener el nombre 
         return {'tipo': tipo, 'pokemon': pokemons[rn]['pokemon']['name']}, response.status_code 
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
+        logger.error(f'Interrupcion por error HTTP: {http_err}')
         return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
     
     except requests.exceptions.JSONDecodeError as json_err:
+        logger.error(f'Interrupcion por error en JSON: {json_err}')
         return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
     
     except requests.exceptions.RequestException as req_err:
+        logger.error(f'Interrupcion por error en Request: {req_err}')
         return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
     
     # Notificar otros errores
     except Exception as err:
+        logger.error(f'Interrupcion por error: {err}')
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
 
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┌┬┐┬─┐┌─┐┌─┐
@@ -357,60 +347,74 @@ def get_random_pokemon(tipo):
 @jwt_required()
 def get_random_long_name(tipo):
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
+    logger.info('Inicio de obtener pokemon con nombre mas largo')
 
     try:
         # Obetener la info del tipo
         response = requests.get(pokemon_url)
+        logger.info('Informacion obtenida exitosamente')
         # extraer solo los pokemons 
         pokemons = response.json()['pokemon']
+        logger.info(f'Pokemons de tipo {tipo} extraidos')
 
         # Buscar el pokemon con nombre mas largo
         long_name_pokemon = ''
         for pokemon in list(pokemons): # Compara el actual nombre mas largo con el siguiente pokemon
             if len(long_name_pokemon) < len(pokemon['pokemon']['name']): # si el nombre del pokemon evaluado es mas largo que el actual nombre mas largo
                 long_name_pokemon = pokemon['pokemon']['name']           # el actual nombre mas largo se vuelve el pokemon evaluado
+        logger.info('Pokemon con nombre mas largo encontrado')
+        logger.info('Fin del proceso de obtener pokemon con nombre largo')
         return {'tipo': tipo, 'pokemon': long_name_pokemon}, response.status_code
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
+        logger.error(f'Interrupcion por error HTTP: {http_err}')
         return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
     
     except requests.exceptions.JSONDecodeError as json_err:
+        logger.error(f'Interrupcion por error en JSON: {json_err}')
         return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
     
     except requests.exceptions.RequestException as req_err:
+        logger.error(f'Interrupcion por error en Request: {req_err}')
         return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
     
     # Notificar otros errores
     except Exception as err:
+        logger.error(f'Interrupcion por error: {err}')
         return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
 
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┌─┐┬ ┬┌─┐┌┬┐┬─┐┌─┐
 #├─┘│ ││││ │ │ │  │  │ │├─┤ │ ├┬┘│ │
 #┴  └─┘┘└┘ ┴ └─┘  └─┘└─┘┴ ┴ ┴ ┴└─└─┘
 # Obtener un pokemon al azar del tipo mas fuerte en mi zona, y que tenga las letras 'i', 'a' o 'm' en su nombre
-@app.route('/random_better_pokemon', methods=['GET'])
+@app.route('/random_better_pokemon/<string:ubicacion>', methods=['GET'])
 @jwt_required()
-def get_random_better_pokemon():
+def get_random_better_pokemon(ubicacion):
+    logger.info('Inicio de obtener pokemon dependiendo la temperatura')
+
     # Crear un cliente de la api Open-Meteo y almacenar temporalmente sus datos
     cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
     openmeteo = openmeteo_requests.Client(session = retry_session)
+    logger.info('Datos de cache y cliente de open-meteo creados')
 
-    # Crear un localizador con la ciudad donde estoy
+    # Crear un localizador con la ciudad donde estoy 
     geolocator = Nominatim(user_agent='geo_locator')
-    location = geolocator.geocode('El penol, Antioquia')
+    location = geolocator.geocode(ubicacion)
+    logger.info(f'Localizador creado para {location.address}')
 
     # Obtener la fecha de hoy
     fecha_actual = datetime.now()
 
-    # Hacer un rango entre los ultmos 7 y ultimos 2 dias (revisando los datos, la api demora 2 dias en subir bien los datos del clima)
+    # Hacer un rango entre los ultmos 7 y ultimos 2 dias (Para alternativa de promedio de temperatura)
     fecha_rango_inicial = fecha_actual - timedelta(days=7)
     fecha_rango_final = fecha_actual - timedelta(days=2)
 
     # Ajustarlos al formato que acepta Open-Meteo para fechas
     fecha_rango_inicial = fecha_rango_inicial.strftime('%Y-%m-%d')
     fecha_rango_final = fecha_rango_final.strftime('%Y-%m-%d')
+    logger.info('Variables de tiempo creadas')
 
     # url de Open-Meteo 
     url = 'https://api.open-meteo.com/v1/forecast'
@@ -429,11 +433,11 @@ def get_random_better_pokemon():
         # Obetener los datos del clima que necesito
         responses = openmeteo.weather_api(url, params=params)
         response = responses[0]
-
+        logger.info('Obtener datos de la api Open-Meteo exitoso')
         # Obtener temperatura actual de mi zona
         current = response.Current()
         temp = round(current.Variables(0).Value(), 2)
-
+        logger.info(f'Temperatura actual en {ubicacion}: {temp}')
         # Alternativa con un promedio semanal
         #hourly = response.Hourly()
         #hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()
@@ -453,56 +457,71 @@ def get_random_better_pokemon():
 
         # Hacer la url de pokeapi con ese tipo
         pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
+        logger.info('Mejor tipo de la zona seleccionado')
 
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
-        return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
+        logger.error(f'Interrupcion por error HTTP: {http_err}')
+        return jsonify({'error': f'Error HTTP: {http_err}'}), 403
     
     except requests.exceptions.JSONDecodeError as json_err:
-        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
+        logger.error(f'Interrupcion por error en JSON: {json_err}')
+        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), 403
     
     except requests.exceptions.RequestException as req_err:
-        return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
+        logger.error(f'Interrupcion por error en Request: {req_err}')
+        return jsonify({'error': f'Error occurred: {req_err}'}), 403
     
     # Notificar otros errores
     except Exception as err:
-        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 403
+        logger.error(f'Interrupcion por error: {err}')
+        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 500
         
 
     try:
-        # Obetener info del tipo
+        # Obetener la info del tipo
         response = requests.get(pokemon_url)
-        # Extraer los pokemons
+        logger.info('Informacion obtenida exitosamente')
+        # extraer solo los pokemons 
         pokemons = response.json()['pokemon']
+        logger.info(f'Pokemons de tipo {tipo} extraidos')
+
         # Generar un numero aleatorio entre 0 y el total de pokemons por ese tipo
         rn = randint(0, len(list(pokemons))-1) 
         # Pokemon aleatorio
         pokemon = pokemons[rn]['pokemon']['name']
-
+        logger.info('Inicio de verificacion de condiciones del nombre')
         # Verificar si tiene 'i', 'a' o 'm' en su nombre
         while True:
             if 'i' in pokemon or 'a' in pokemon or 'm' in pokemon:
+                logger.info('El pokemon cumple con las condiciones')
                 break
             else:
                 # sino tiene esas letras se volvera a escoger otro pokemon aleatoriamente
                 rn = randint(0, len(list(pokemons))-1) 
                 pokemon = pokemons[rn]['pokemon']['name']
+                logger.info('El pokemon no cumple las condiciones, se escoge otro aleatorio')
 
-        return {'tipo': tipo, 'pokemon': pokemon, 'temperatura': temp}, 200
+        logger.info('Fin del proceso del mejor pokemon')
+        return {'tipo': tipo, 'pokemon': pokemon, 'temperatura': temp, 'ubicacion': location.address}, 200
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
-        return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
+        logger.error(f'Interrupcion por error HTTP: {http_err}')
+        return jsonify({'error': f'Error HTTP: {http_err}'}), 403
     
     except requests.exceptions.JSONDecodeError as json_err:
-        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
+        logger.error(f'Interrupcion por error en JSON: {json_err}')
+        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), 403
     
     except requests.exceptions.RequestException as req_err:
-        return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
+        logger.error(f'Interrupcion por error en Request: {req_err}')
+        return jsonify({'error': f'Error occurred: {req_err}'}), 403
     
     # Notificar otros errores
     except Exception as err:
-        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 403
+        logger.error(f'Interrupcion por error: {err}')
+        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 500
 
 
 if __name__ == '__main__':

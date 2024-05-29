@@ -292,9 +292,12 @@
         <hr>
         <div class="row g-3">
             <h3>4. Obtener el pokemon mas fuerte de mi zona</h3>
-            <p>Al oprimir el boton se obtendra un pokemon al azar dependiendo la temperatura de mi zona, ademas este tiene que tener alguna de estas letras en su nombre: 'i', 'a' o 'm'</p>
+            <p>Al oprimir el boton se obtendra un pokemon al azar dependiendo la temperatura de la zona ingresada, sino ingresa nada tomara mi zona: El Peñol, Antioquia. Ademas, el pokemon elegido al azar tiene que tener alguna de estas letras en su nombre: 'i', 'a' o 'm'</p>
             <div class="col-auto">
-                <button onclick="fetchProtectedData('/random_better_pokemon', 'pokemonBetter')" class="btn btn-primary mb-3">Obtener Pokemon dependiendo de temperatura</button>
+                <input type="text" id="pokemonBetter" placeholder="El Peñol, Antioquia" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button onclick="fetchProtectedData('/random_better_pokemon/' + (document.getElementById('pokemonBetter').value ? document.getElementById('pokemonBetter').value : 'La fenix, El Peñol, Antioquia'), 'pokemonBetter')" class="btn btn-primary mb-3">Obtener Pokemon dependiendo de temperatura</button>
             </div>
             <!-- Aqui aparece la informacion de este punto -->
             <pre id="result-pokemonBetter"></pre>

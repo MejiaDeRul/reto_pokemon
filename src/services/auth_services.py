@@ -205,11 +205,11 @@ def send_otp_email(correo, otp):
     mensaje.attach(MIMEText(f'Tu código OTP es {otp}.', 'plain'))
 
     # Iniciar una conexión SMTP segura con el servidor
-    with smtplib.SMTP(host=servidor_smtp, port=puerto_smtp) as servidor_smtp:
-        servidor_smtp.starttls()  # Iniciar cifrado TLS
-        servidor_smtp.login(remitente, contraseña)  # Autenticarse en el servidor SMTP
+    with smtplib.SMTP(host=servidor_smtp, port=puerto_smtp) as servidor:
+        servidor.starttls()  # Iniciar cifrado TLS
+        servidor.login(remitente, contraseña)  # Autenticarse en el servidor SMTP
         texto_del_mensaje = mensaje.as_string()
-        servidor_smtp.sendmail(remitente, correo, texto_del_mensaje)  # Enviar correo electrónico
+        servidor.sendmail(remitente, correo, texto_del_mensaje)  # Enviar correo electrónico
 
 #┬  ┬┌─┐┬─┐┬┌─┐┬┌─┐┌─┐┬─┐  ┌─┐┌┬┐┌─┐
 #└┐┌┘├┤ ├┬┘│├┤ ││  ├─┤├┬┘  │ │ │ ├─┘

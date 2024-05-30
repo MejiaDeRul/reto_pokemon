@@ -209,7 +209,7 @@ def send_otp_email(correo, otp):
     msg = Message(
     'Your OTP Code',
     recipients=[correo],
-    body=f'Tu código OTP es {otp}. Expira en 10 minutos.'
+    body=f'Tu código OTP es {otp}.'
     )
     mail.send(msg)
 

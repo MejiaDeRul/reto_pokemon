@@ -1,0 +1,31 @@
+version: '4.3'
+services:
+  monguito: 
+    image: mongo:7.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodata:/data/db
+
+  flaskapp:
+    build: .
+    container_name: flaskapp
+    ports:
+      - 5000:5000
+    depends_on:
+      - monguito
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - MONGO_URI=${MONGO_URI}
+    volumes:
+      - ./:/app
+      - ./logs:/app/logs
+
+volumes:
+  mongodata:

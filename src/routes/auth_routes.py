@@ -1,7 +1,7 @@
 from flask import Blueprint
-from src.services.auth_services import register_service, verify_email_service, login_service, verify_otp_service
+from src.services.auth_services import register_service, verify_email_service, login_service, verify_otp_service # Funciones de autenticacion
 
-
+# Crear blueprint
 auth_bp = Blueprint('auth', __name__)
 
 #┬─┐┌─┐┌─┐┬┌─┐┌┬┐┌─┐┬─┐

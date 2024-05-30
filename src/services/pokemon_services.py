@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┬ ┬┌┐┌┌─┐
 #├─┘│ ││││ │ │ │  │ │││││ │
 #┴  └─┘┘└┘ ┴ └─┘  └─┘┘└┘└─┘
-# Obtener el tipo de un pokemon
+# Servicio Obtener el tipo de un pokemon
 def get_pokemon_service(nombre):
     # URL de pokeapi
     pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{nombre}'
@@ -28,35 +28,37 @@ def get_pokemon_service(nombre):
         # Obetener la info del pokemon
         response = requests.get(pokemon_url)
         logger.info(f'Informacion de pokemon {nombre} obtenida exitosamente')
+
         # Extraer sus tipos o tipo
         tipos = response.json()['types']
         logger.info('Tipo extraido')
+
         # devolver el nombre del pokemon y sus tipos
         logger.info('Fin del proceso')
-        return {'pokemon': nombre, 'tipos': [tipo['type']['name'] for tipo in tipos]}, response.status_code
+        return {'pokemon': nombre, 'tipos': [tipo['type']['name'] for tipo in tipos]}, 200
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
         logger.error(f'Interrupcion por error HTTP: {http_err}')
-        return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
+        return jsonify({'error': f'Error HTTP: {http_err}'}), 403
     
     except requests.exceptions.JSONDecodeError as json_err:
         logger.error(f'Interrupcion por error en JSON: {json_err}')
-        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
+        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), 403
     
     except requests.exceptions.RequestException as req_err:
         logger.error(f'Interrupcion por error en Request: {req_err}')
-        return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
+        return jsonify({'error': f'Error occurred: {req_err}'}), 403
     
     # Notificar otros errores
     except Exception as err:
         logger.error(f'Interrupcion por error: {err}')
-        return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
+        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 500
 
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┌┬┐┌─┐┌─┐
 #├─┘│ ││││ │ │ │   │││ │└─┐
 #┴  └─┘┘└┘ ┴ └─┘  ─┴┘└─┘└─┘
-# Obtener un pokemon al azar de un tipo especifico 
+# Servicio para Obtener un pokemon al azar de un tipo especifico 
 def get_random_pokemon_service(tipo):
     # URL de pokeapi
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
@@ -76,30 +78,30 @@ def get_random_pokemon_service(tipo):
 
         # NOTA: en la seccion type de la api hay mucha mas informacion como las diferencias de un solo pokemon en cada version, 
         #       por eso se accede a tantos diccionarios solo para obtener el nombre 
-        return {'tipo': tipo, 'pokemon': pokemons[rn]['pokemon']['name']}, response.status_code 
+        return {'tipo': tipo, 'pokemon': pokemons[rn]['pokemon']['name']}, 200
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
         logger.error(f'Interrupcion por error HTTP: {http_err}')
-        return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
+        return jsonify({'error': f'Error HTTP: {http_err}'}), 403
     
     except requests.exceptions.JSONDecodeError as json_err:
         logger.error(f'Interrupcion por error en JSON: {json_err}')
-        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
+        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), 403
     
     except requests.exceptions.RequestException as req_err:
         logger.error(f'Interrupcion por error en Request: {req_err}')
-        return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
+        return jsonify({'error': f'Error occurred: {req_err}'}), 403
     
     # Notificar otros errores
     except Exception as err:
         logger.error(f'Interrupcion por error: {err}')
-        return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
+        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 500
     
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┌┬┐┬─┐┌─┐┌─┐
 #├─┘│ ││││ │ │ │   │ ├┬┘├┤ └─┐
 #┴  └─┘┘└┘ ┴ └─┘   ┴ ┴└─└─┘└─┘
-# Pokemon con el nombre mas largo de cierto tipo
+# Servicio para obtener Pokemon con el nombre mas largo de cierto tipo
 def get_random_long_name_service(tipo):
     pokemon_url = f'https://pokeapi.co/api/v2/type/{tipo}'
     logger.info('Inicio de obtener pokemon con nombre mas largo')
@@ -119,30 +121,30 @@ def get_random_long_name_service(tipo):
                 long_name_pokemon = pokemon['pokemon']['name']           # el actual nombre mas largo se vuelve el pokemon evaluado
         logger.info('Pokemon con nombre mas largo encontrado')
         logger.info('Fin del proceso de obtener pokemon con nombre largo')
-        return {'tipo': tipo, 'pokemon': long_name_pokemon}, response.status_code
+        return {'tipo': tipo, 'pokemon': long_name_pokemon}, 200
     
     # Notificar errores comunes como copiar mal el nombre o no recibir informacion
     except requests.exceptions.HTTPError as http_err:
         logger.error(f'Interrupcion por error HTTP: {http_err}')
-        return jsonify({'error': f'Error HTTP: {http_err}'}), response.status_code
+        return jsonify({'error': f'Error HTTP: {http_err}'}), 403
     
     except requests.exceptions.JSONDecodeError as json_err:
         logger.error(f'Interrupcion por error en JSON: {json_err}')
-        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), response.status_code
+        return jsonify({'error': f'Error en JSON o escribiendo el nombre: {json_err}'}), 403
     
     except requests.exceptions.RequestException as req_err:
         logger.error(f'Interrupcion por error en Request: {req_err}')
-        return jsonify({'error': f'Error occurred: {req_err}'}), response.status_code
+        return jsonify({'error': f'Error occurred: {req_err}'}), 403
     
     # Notificar otros errores
     except Exception as err:
         logger.error(f'Interrupcion por error: {err}')
-        return jsonify({'error': f'Ha ocurrido un error: {err}'}), response.status_code
+        return jsonify({'error': f'Ha ocurrido un error: {err}'}), 500
 
 #┌─┐┬ ┬┌┐┌┌┬┐┌─┐  ┌─┐┬ ┬┌─┐┌┬┐┬─┐┌─┐
 #├─┘│ ││││ │ │ │  │  │ │├─┤ │ ├┬┘│ │
 #┴  └─┘┘└┘ ┴ └─┘  └─┘└─┘┴ ┴ ┴ ┴└─└─┘
-# Obtener un pokemon al azar del tipo mas fuerte en mi zona, y que tenga las letras 'i', 'a' o 'm' en su nombre
+# Servicio para Obtener un pokemon al azar del tipo mas fuerte en mi zona, y que tenga las letras 'i', 'a' o 'm' en su nombre
 def get_random_better_pokemon_service(ubicacion):
     logger.info('Inicio de obtener pokemon dependiendo la temperatura')
 
@@ -162,11 +164,12 @@ def get_random_better_pokemon_service(ubicacion):
 
     # Hacer un rango entre los ultmos 7 y ultimos 2 dias (Para alternativa de promedio de temperatura)
     fecha_rango_inicial = fecha_actual - timedelta(days=7)
-    fecha_rango_final = fecha_actual - timedelta(days=2)
+    # fecha_rango_final = fecha_actual - timedelta(days=2)
 
     # Ajustarlos al formato que acepta Open-Meteo para fechas
     fecha_rango_inicial = fecha_rango_inicial.strftime('%Y-%m-%d')
-    fecha_rango_final = fecha_rango_final.strftime('%Y-%m-%d')
+    # fecha_rango_final = fecha_rango_final.strftime('%Y-%m-%d')
+    fecha_actual = fecha_actual.strftime('%Y-%m-%d')
     logger.info('Variables de tiempo creadas')
 
     # url de Open-Meteo 
@@ -176,7 +179,7 @@ def get_random_better_pokemon_service(ubicacion):
         'latitude': location.latitude,
         'longitude': location.longitude,
         'start_date': fecha_rango_inicial,
-        'end_date': fecha_rango_final,
+        'end_date': fecha_actual,
         'hourly': 'temperature_2m',
         'current': 'temperature_2m',
         'timezone': 'auto'
@@ -191,6 +194,7 @@ def get_random_better_pokemon_service(ubicacion):
         current = response.Current()
         temp = round(current.Variables(0).Value(), 2)
         logger.info(f'Temperatura actual en {ubicacion}: {temp}')
+
         # Alternativa con un promedio semanal
         #hourly = response.Hourly()
         #hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy()

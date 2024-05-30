@@ -23,6 +23,8 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
       - MONGO_URI=${MONGO_URI}
+      - EMAIL_SERVER=${EMAIL_SERVER}
+      - EMAIL_PORT=${EMAIL_PORT}
     volumes:
       - ./:/app
       - ./logs:/app/logs

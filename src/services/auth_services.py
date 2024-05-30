@@ -1,14 +1,15 @@
 from flask import request, jsonify, url_for
-from pymongo import MongoClient
-import logging
+from pymongo import MongoClient # Cliente para usar bases de MongoDB
+import logging # Libreria para hacer logs
 from werkzeug.security import generate_password_hash, check_password_hash # Generador de hash para las contraseñas
-from random import randint
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from src.utils.Security import generate_token
+from random import randint # Generador de numeros random enteros
+import smtplib # Libreria para enviar correos
+from email.mime.text import MIMEText # Instancia para crear del cuerpo del correo
+from email.mime.multipart import MIMEMultipart # Instancia para crear objetos de tipo correo
+from src.utils.Security import generate_token # Funcion para generar token JWT 
 import os
 
+# Crear un logger 
 logging.basicConfig(filename='/app/logs/logs.log', level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s') # Configurar logging
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ def register_service():
     collection = db.usuarios  # Usar la coleccion 'usuarios' 
 
     logger.info('Inicio de registro de usuario')
+
     # Extraer datos solicitados para registrar un usuario 
     nombre = request.json.get('nombre', None)
     usuario = request.json.get('usuario', None)
@@ -34,6 +36,7 @@ def register_service():
         logger.info('No se han llenado todos los campos, fin de registro')
         return jsonify({'msg': "Todos los campos son requeridos"}), 400
     
+    # Confirmar que ha ingresado bien la contraseña
     if contrasena != conf_contrasena:
         logger.info('Las contraseñas no coinciden, fin de registro')
         return jsonify({'msg': "Las contraseñas no coinciden"}), 400
@@ -77,8 +80,9 @@ def register_service():
 
 # Funcion para enviar url para verificar correo
 def send_verification_email(correo, usuario, codigo_verificacion):
-    # Crear url para la validacion
+    # Crear url para la validacion, este direcciona al endpoint que añadamos
     link_verificacion = url_for('auth.verify_email', usuario=usuario, codigo=codigo_verificacion, _external=True)
+
     # Configuración del servidor SMTP
     servidor_smtp = os.environ.get('EMAIL_SERVER')
     puerto_smtp = os.environ.get('EMAIL_PORT')
@@ -116,9 +120,11 @@ def verify_email_service(usuario, codigo):
     collection = db.usuarios  # Usar la coleccion 'usuarios' 
 
     logger.info('Inicio de verificacion de correo de usuario nuevo')
+
     try:
         # Extraer el usuario de la db
         user = collection.find_one({'usuario': usuario})
+
         # Verificar si es el codigo de verificacion
         if user and check_password_hash(user.get('codigo_verificacion'), codigo):
             # Cambiar estado a verificado
@@ -136,7 +142,7 @@ def verify_email_service(usuario, codigo):
 #┬  ┌─┐┌─┐┬┌┐┌
 #│  │ ││ ┬││││
 #┴─┘└─┘└─┘┴┘└┘
-# Ruta para autenticación de usuario
+# Servicio para autenticación de usuario
 def login_service():
     client = MongoClient(os.environ.get('MONGO_URI')) # Crear cliente para conectar con cluster de mongo
     db = client.get_database('pokemons') # Usar la base llamada 'pokemons'
@@ -175,6 +181,7 @@ def login_service():
         # Guardar OTP
         collection.update_one({'_id': user['_id']}, {'$set': {'otp': hashed_otp}})
         logger.info('Codigo OTP generado')
+
         # Enviar OTP a correo
         send_otp_email(user['correo'], otp)
         logger.info('Correo con codigo enviado')
@@ -185,7 +192,7 @@ def login_service():
 
     return jsonify({"msg": "OTP enviado a tu correo"}), 200
 
-# Funcion para OTP a correo
+# Funcion para enviar OTP a correo
 def send_otp_email(correo, otp):
     # Configuración del servidor SMTP
     servidor_smtp = os.environ.get('EMAIL_SERVER')
@@ -219,6 +226,7 @@ def verify_otp_service():
     client = MongoClient(os.environ.get('MONGO_URI')) # Crear cliente para conectar con cluster de mongo
     db = client.get_database('pokemons') # Usar la base llamada 'pokemons'
     collection = db.usuarios  # Usar la coleccion 'usuarios' 
+
     # Extraer datos
     usuario = request.json.get('usuario', None)
     otp = request.json.get('otp', None)
@@ -234,7 +242,7 @@ def verify_otp_service():
         user = collection.find_one({"usuario": usuario})
         if not user or 'otp' not in user or not check_password_hash(user['otp'], otp):
             logger.info('Codigo ingresado es incorrecto')
-            return jsonify({"msg": "OTP incorrecto"}), 401
+            return jsonify({"msg": "OTP incorrecto o no existe"}), 401
         logger.info('Verificaicon exitosa')
     except Exception as err:
         logger.error(f'Fin de verificacion por error: {err}')

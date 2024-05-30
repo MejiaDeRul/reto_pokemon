@@ -21,6 +21,6 @@ Si quieres usar la API en tu ordenador de manera local debes seguir los siguient
 - Luego de tener este archivo list Iniciar Docker Desktop o instalarlo sino cuenta con el
 - En la terminal ejecutar -> docker compose up
 - Si todo funciona correctamente, en su navegador de preferencia ir a esta direccion -> http://127.0.0.1:5000
-- Listo, ya puedes empezar a usar la API, empezando por crear el primer usuario
+- Listo, ya puedes empezar a usar la API, empezando por registrar el primer usuario
   
 

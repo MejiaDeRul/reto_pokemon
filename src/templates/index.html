@@ -92,7 +92,7 @@
                 hideElement('registerForm');
                 showElement('otpForm');
             } else {
-                alert('Error en el login: ' + data.msg);
+                alert('Error en el inicio de sesion: ' + data.msg);
             }
         }
 
@@ -115,11 +115,11 @@
             const data = await response.json();
             if (response.ok) {
                 localStorage.setItem('access_token', data.access_token);
-                alert('Login exitoso');
+                alert('Inicio de sesion exitoso');
                 document.getElementById('otp').value = ''
                 checkLoginStatus();
             } else {
-                alert('Error en la verificación del OTP: ' + data.msg);
+                alert('Error en la verificación del codigo OTP: ' + data.msg);
             }
         }
 
@@ -128,7 +128,7 @@
             // Extrae el token de acceso, sino hay token queda vacio
             const token = localStorage.getItem('access_token');
             if (!token) {
-                alert('Por favor inicia sesión primero');
+                alert('Por favor inicia sesion primero');
                 return;
             }
 

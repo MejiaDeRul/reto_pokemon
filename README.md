@@ -33,3 +33,7 @@ La API cuenta con 4 esquemas de autenticacion:
 - **Verificacion de doble factor**: Luego de verificar los datos al iniciar sesion y ser correctos, se envia un codigo de un solo uso (OTP) al correo del usuario, este mismo debe ingresar el codigo para completar el inicio de sesion.
 - **Token JWT**: Luego de iniciar sesion correctamente, se genera un token JWT (JSON Web Token) para ciertas funcionalidades de la aplicacion.
 
+## Notas
+- Se crean dos containers de Docker, uno para una base de datos MongoDB y el otro para cargar la API, al estar activos la base de datos se puede visualizar por ejemplo en visual studio code con la extendion de MongoDB, solo cambiar 'monguito' por 'localhost' dentro de las variables de entorno en 'MONGO_URI'
+- Si sale algun error, en el archivo logs sale mas legible tambien los errores del servidor
+- Si algo no sale bien contactarse conmigo

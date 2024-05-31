@@ -36,4 +36,5 @@ La API cuenta con 4 esquemas de autenticacion:
 ## Notas
 - Se crean dos containers de Docker, uno para una base de datos MongoDB y el otro para cargar la API, al estar activos la base de datos se puede visualizar por ejemplo en visual studio code con la extendion de MongoDB, solo cambiar 'monguito' por 'localhost' dentro de las variables de entorno en 'MONGO_URI'
 - Si sale algun error, en el archivo logs sale mas legible tambien los errores del servidor
+- Algunas acciones pueden tardar un poco pero ya depende de la conexion a internet y la potencia del ordenador
 - Si algo no sale bien contactarse conmigo

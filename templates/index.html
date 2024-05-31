@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <title>Reto PokeAPI</title>
+    <!-- Recibir y enviar datos entre la API y la plantilla -->
+    <script>
+        // funcion para Mostrar secciones
+        function showElement(elementId) {
+            document.getElementById(elementId).style.display = 'block';
+        }
+        
+        // funcion para Esconder secciones
+        function hideElement(elementId) {
+            document.getElementById(elementId).style.display = 'none';
+        }
+
+        // funcion para verificar si el usuario tiene un token activo en su sesion
+        function checkLoginStatus() {
+            // Extrae el token de acceso, sino hay token queda vacio
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                hideElement('loginForm');
+                hideElement('otpForm');
+                hideElement('registerForm');
+                showElement('protectedData');
+            } else {
+                showElement('loginForm');
+                showElement('registerForm');
+                hideElement('otpForm');
+                hideElement('protectedData');
+            }
+        }
+
+        // Funcion para registrar un nuevo usuario
+        async function register() {
+            // Extraer los datos de los campos a rellenar
+            const nombre = document.getElementById('regNombre').value;
+            const usuario = document.getElementById('regUsuario').value;
+            const contrasena = document.getElementById('regContrasena').value;
+            const conf_contrasena = document.getElementById('regConfContrasena').value;
+            const correo = document.getElementById('regCorreo').value;
+
+            // Solicitud al endpoint 'register' de tipo POST para crear el nuevo usuario
+            const response = await fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ nombre, usuario, contrasena, conf_contrasena, correo })
+            });
+
+            // Obtener respuesta del endpoint 'register' (puede devolver un 'ok' o algun error, dependiendo el caso)
+            const data = await response.json();
+            // Limpiar los campos rellenados o mostrar error
+            if (response.ok) {
+                alert('Registro exitoso');
+                document.getElementById('regNombre').value = '';
+                document.getElementById('regUsuario').value = '';
+                document.getElementById('regContrasena').value = '';
+                document.getElementById('regConfContrasena').value = '';
+                document.getElementById('regCorreo').value = '';
+            } else {
+                alert('Error en el registro: ' + data.msg);
+            }
+        }
+
+        // Funcion para iniciar sesion con un usuario
+        async function login() {
+            // Extraer los datos de los campos a rellenar
+            const usuario = document.getElementById('logUsuario').value;
+            const contrasena = document.getElementById('logContrasena').value;
+
+            // Solicitud al endpoint 'login' de tipo POST para ingresar a la API
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ usuario, contrasena })
+            });
+
+            // Obtener respuesta del endpoint 'login' (puede devolver un 'ok' o algun error, dependiendo el caso)
+            const data = await response.json();
+            // Notificar que se envio el codigo OTP al correo o mostrar error
+            if (response.ok) {
+                alert('OTP enviado a tu correo');
+                hideElement('loginForm');
+                hideElement('registerForm');
+                showElement('otpForm');
+            } else {
+                alert('Error en el inicio de sesion: ' + data.msg);
+            }
+        }
+
+        // Funcion para verificar el codigo OTP enviado al correo
+        async function verifyOtp() {
+            // Extraer los datos del campo a rellenar y usar el usuario con el que se pidio iniciar sesion
+            const usuario = document.getElementById('logUsuario').value;
+            const otp = document.getElementById('otp').value;
+
+            // Solicitud al endpoint 'verify_otp' de tipo POST para verificar el codigo y obtener el token de acceso
+            const response = await fetch('/verify_otp', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ usuario, otp })
+            });
+
+            // Obtener respuesta del endpoint 'verify_otp' (puede devolver un 'ok' o algun error, dependiendo el caso)
+            const data = await response.json();
+            if (response.ok) {
+                localStorage.setItem('access_token', data.access_token);
+                alert('Inicio de sesion exitoso');
+                document.getElementById('otp').value = ''
+                checkLoginStatus();
+            } else {
+                alert('Error en la verificación del codigo OTP: ' + data.msg);
+            }
+        }
+
+        // Funcion para mostrar la informacion obtenidad de los endpoint del reto
+        async function fetchProtectedData(endpoint, inputId) {
+            // Extrae el token de acceso, sino hay token queda vacio
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                alert('Por favor inicia sesion primero');
+                return;
+            }
+
+            // Solicitud al endpoint que pedimos enviando token de acceso para poder usar el mismo
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            // Obtener respuesta del endpoint solicitado (puede devolver un 'ok' o algun error, dependiendo el caso)
+            const data = await response.json();
+            if (response.ok) {
+                // Mostrar la información en pantalla de manera legible
+                displayData(data, inputId);
+            } else {
+                alert('Error al obtener los datos: ' + data.msg);
+            }
+        }
+
+        // Función para formatear y mostrar los datos de manera legible
+        function displayData(data, inputId) {
+            let resultElement = document.getElementById(`result-${inputId}`);
+            resultElement.innerHTML = ''; // Limpiar contenido previo
+            // Crear la seccion donde se muestra la informacion 
+            let formattedData = '<ul>';
+            for (let key in data) {
+                // Evitar propiedades heredadas
+                if (data.hasOwnProperty(key)) {
+                    formattedData += `<li><strong>${capitalizeFirstLetter(key)}:</strong> ${data[key]}</li>`;
+                }
+            }
+            formattedData += '</ul>';
+            resultElement.innerHTML = formattedData;
+        }
+
+        // Función para capitalizar la primera letra de una cadena (volver mayuscula)
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Funcion para cerrar sesion
+        function logout() {
+            // Quitar el token de acceso de la sesion
+            localStorage.removeItem('access_token');
+            checkLoginStatus();
+            document.getElementById('result').textContent = '';
+        }
+
+        // Al cargar la ventana en el navegador o recargarse, verifica si hay token de acceso
+        window.onload = checkLoginStatus;
+    </script>
+</head>
+<body>
+    <!-- Formulario para registrar nuevo usuario -->
+    <div class="container mt-5" id="registerForm">
+        <h2>Registrarse</h2>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="regNombre" class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="regNombre">
+            </div>
+            <div class="col-md-6">
+                <label for="regUsuario" class="form-label">Usuario</label>
+                <input type="text" class="form-control" id="regUsuario">
+            </div>
+            <div class="col-md-6">
+                <label for="regContrasena" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="regContrasena">
+            </div>
+            <div class="col-md-6">
+                <label for="regConfContrasena" class="form-label">Confirmar Contraseña</label>
+                <input type="password" class="form-control" id="regConfContrasena">
+            </div>
+            <div class="col-12">
+                <label for="regCorreo" class="form-label">Correo</label>
+                <input type="text" class="form-control" id="regCorreo" placeholder="example@mail.com">
+            </div>
+            <div class="col-12">
+                <button onclick="register()" class="btn btn-primary">Registrar</button>
+            </div>
+        </div>
+        <hr>
+    </div>
+
+    <!-- Formulario para iniciar sesion con un usuario -->
+    <div class="container mt-5" id="loginForm">
+        <h2>Iniciar Sesion</h2>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="logUsuario" class="form-label">Usuario</label>
+                <input type="text" class="form-control" id="logUsuario">
+            </div>
+            <div class="col-md-6">
+                <label for="logContrasena" class="form-label">Contraseña</label>
+                <input type="password" class="form-control" id="logContrasena">
+            </div>
+            <div class="col-12">
+                <button onclick="login()" class="btn btn-primary">Iniciar Sesion</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario para ingresar codigo OTP y verificarlo -->
+    <div class="container mt-5" id="otpForm">
+        <h2>Verificar OTP</h2>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label for="otp" class="form-label">Codigo de verificacion</label>
+                <input type="text" class="form-control" id="otp" placeholder="XXXXXX">
+            </div>
+            <div class="col-12">
+                <button onclick="verifyOtp()" class="btn btn-primary">Verificar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formularios para cada uno de los puntos del reto -->
+    <div id="protectedData" class="container mt-5">
+        <h2>Reto Pokemon</h2>
+        <hr>
+        <div class="row g-3">
+            <h3>1. Obtener el tipo de un pokemon</h3>
+            <p>Ingresa en el cuadrado el nombre del pokemon y presiona obtener para saber sus tipos</p>
+            <div class="col-auto">
+                <input type="text" id="pokemonName" placeholder="Nombre del Pokemon" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button onclick="fetchProtectedData('/pokemon/'+ document.getElementById('pokemonName').value, 'pokemonName')" class="btn btn-primary mb-3">Obtener Tipos</button>
+            </div>
+            <!-- Aqui aparece la informacion de este punto -->
+            <pre id="result-pokemonName"></pre>
+        </div>
+        <hr>
+        <div class="row g-3">
+            <h3>2. Obtener un pokemon al azar de un tipo especifico </h3>
+            <p>Ingresa en el cuadrado el nombre del tipo y presiona el boton para obtener un pokemon al azar</p>
+            <div class="col-auto">
+                <input type="text" id="pokemonType" placeholder="Tipo del Pokemon" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button onclick="fetchProtectedData('/random_pokemon/'+ document.getElementById('pokemonType').value, 'pokemonType')" class="btn btn-primary mb-3">Obtener Pokemon</button>
+            </div>
+            <!-- Aqui aparece la informacion de este punto -->
+            <pre id="result-pokemonType"></pre>
+        </div>
+        <hr>
+        <div class="row g-3">
+            <h3>3. Obtener el pokemon con el nombre mas largo de cierto tipo </h3>
+            <p>Ingresa en el cuadrado el nombre del tipo y presiona el boton para obtener el pokemon con el nombre mas largo de este tipo</p>
+            <div class="col-auto">
+                <input type="text" id="pokemonLongType" placeholder="Tipo para nombre largo" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button onclick="fetchProtectedData('/pokemon_long_name/'+ document.getElementById('pokemonLongType').value, 'pokemonLongType')" class="btn btn-primary mb-3">Obtener pokemon nombre largo</button>
+            </div>
+            <!-- Aqui aparece la informacion de este punto -->
+            <pre id="result-pokemonLongType"></pre>
+        </div>
+        <hr>
+        <div class="row g-3">
+            <h3>4. Obtener el pokemon mas fuerte de mi zona</h3>
+            <p>Al oprimir el boton se obtendra un pokemon al azar dependiendo la temperatura de la zona ingresada, sino ingresa nada tomara mi zona: El Peñol, Antioquia. Ademas, el pokemon elegido al azar tiene que tener alguna de estas letras en su nombre: 'i', 'a' o 'm'</p>
+            <div class="col-auto">
+                <input type="text" id="pokemonBetter" placeholder="laureles, Medellin, Antioquia" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button onclick="fetchProtectedData('/random_better_pokemon/' + (document.getElementById('pokemonBetter').value ? document.getElementById('pokemonBetter').value : 'laureles, Medellin, Antioquia'), 'pokemonBetter')" class="btn btn-primary mb-3">Obtener Pokemon dependiendo de temperatura</button>
+            </div>
+            <!-- Aqui aparece la informacion de este punto -->
+            <pre id="result-pokemonBetter"></pre>
+        </div>
+        <hr>
+        <!-- Cerrar sesion -->
+        <div class="container">
+            <button onclick="logout()" class="btn btn-warning mb-3">Cerrar Sesión</button>
+        </div>
+        <hr>
+    </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+</html>

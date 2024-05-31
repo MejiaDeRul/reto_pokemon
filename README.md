@@ -18,7 +18,7 @@ Si quieres usar la API en tu ordenador de manera local debes seguir los siguient
 - Para las dos variables de llave secreta, usar este comando para generar las llaves (Pegarlo en la terminal de tu ordenador, es necesario tener python) -> python -c 'import secrets; print(secrets.token_hex())'
 - Debes ingresar ademas un correo valido de outlook con su contraseña, sino quieres hacerlo he creado uno solo para el caso, preguntame por el
 - Por ultimo en '.env' defines un usuario y contraseña para la base de datos de mongo
-- Luego de tener este archivo list Iniciar Docker Desktop o instalarlo sino cuenta con el
+- Luego de tener este archivo listo Iniciar Docker Desktop o instalarlo sino cuenta con el
 - En la terminal ejecutar -> docker compose up
 - Si todo funciona correctamente, en su navegador de preferencia ir a esta direccion -> http://127.0.0.1:5000
 - Listo, ya puedes empezar a usar la API, empezando por registrar el primer usuario

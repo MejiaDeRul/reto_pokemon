@@ -24,7 +24,7 @@ Si quieres usar la API en tu ordenador de manera local debes seguir los siguient
 - Listo, ya puedes empezar a usar la API, empezando por registrar el primer usuario
 
 ## Documentacion de la API
-La API tiene un documentacion creada con swagger para mostrar ejemplo de que solicitan y responden los endpoints dentro de esta. Para acceder a esta ingresa -> http://127.0.0.1:5000/apidocs
+La API tiene una documentacion creada con swagger para mostrar ejemplo de que solicitan y responden los endpoints dentro de esta. Para acceder a esta ingresa -> http://127.0.0.1:5000/apidocs
 
 ## Esquemas de autenticacion
 La API cuenta con 4 esquemas de autenticacion:
@@ -34,7 +34,7 @@ La API cuenta con 4 esquemas de autenticacion:
 - **Token JWT**: Luego de iniciar sesion correctamente, se genera un token JWT (JSON Web Token) para ciertas funcionalidades de la aplicacion.
 
 ## Notas
-- Se crean dos containers de Docker, uno para una base de datos MongoDB y el otro para cargar la API, al estar activos la base de datos se puede visualizar por ejemplo en visual studio code con la extendion de MongoDB, solo cambiar 'monguito' por 'localhost' dentro de las variables de entorno en 'MONGO_URI'
+- Se crean dos containers de Docker, uno para una base de datos MongoDB y el otro para cargar la API, al estar activos la base de datos se puede visualizar por ejemplo en visual studio code con la extension de MongoDB, solo cambiar 'monguito' por 'localhost' dentro de las variables de entorno en 'MONGO_URI'
 - Si sale algun error, en el archivo logs sale mas legible tambien los errores del servidor
 - Algunas acciones pueden tardar un poco pero ya depende de la conexion a internet y la potencia del ordenador
 - Tambien al iniciar la API la primera vez puede que salga ya directamente en los puntos de los retos, si pasa solo hay que darle cerrar sesion

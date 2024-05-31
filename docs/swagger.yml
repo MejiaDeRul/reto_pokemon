@@ -1,0 +1,349 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: Pokeprueba con seguridad
+  description: API que realiza 4 ejercicios accediendo a Poke-api y open-meteo, además de autenticación
+host: "127.0.0.1:5000"
+basePath: "/"
+schemes:
+  - "http"
+paths:
+  /register:
+    post:
+      tags: 
+        - auth
+      summary: Registra un nuevo usuario
+      description: Endpoint para registrar nuevo usuario.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              nombre:
+                type: string
+                example: juan
+              usuario:
+                type: string
+                example: juan123
+              contrasena:
+                type: string
+                example: contrasena123
+              conf_contrasena:
+                type: string
+                example: contrasena123
+              correo:
+                type: string
+                example: juan.correo@dominio.com
+      responses:
+        201:
+          description: Usuario registrado exitosamente
+          schema:
+            type: object
+            properties:
+              msg: 
+                type: string
+                example: Registro exitoso
+        400:
+          description: Error en la solicitud
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Error al registrar
+  /login:
+    post:
+      tags: 
+        - auth
+      summary: Inicia sesión con usuario
+      description: Endpoint para iniciar sesión y enviar código OTP.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              usuario:
+                type: string
+                example: juan123
+              contrasena:
+                type: string
+                example: contrasena123
+      responses:
+        201:
+          description: Enviar código OTP
+          schema:
+            type: object
+            properties:
+              msg: 
+                type: string
+                example: Correo con código enviado
+        400:
+          description: Error en la solicitud
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Error al iniciar sesión
+  /verify_otp:
+    post:
+      tags: 
+        - auth
+      summary: Verifica código OTP para terminar de iniciar sesión
+      description: Endpoint para verificar código OTP enviado al intentar iniciar sesión.
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            properties:
+              usuario:
+                type: string
+                example: juan123
+              otp:
+                type: integer
+                example: 999999
+      responses:
+        201:
+          description: Inicio de sesión exitoso
+          schema:
+            type: object
+            properties:
+              msg: 
+                type: string
+                example: Inicio de sesión exitoso
+        400:
+          description: Error en la solicitud
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Error con el código
+  /verify_email/{usuario}/{codigo}:
+    get:
+      tags: 
+        - auth
+      summary: Verificar el correo electrónico del usuario
+      description: Endpoint para verificar el correo electrónico del usuario utilizando un código de verificación.
+      parameters:
+        - name: usuario
+          in: path
+          required: true
+          type: string
+          example: juan123
+        - name: codigo
+          in: path
+          required: true
+          type: string
+          example: contrasena123
+      responses:
+        200:
+          description: Verificación exitosa
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Correo verificado exitosamente
+        400:
+          description: Código de verificación inválido
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Código de verificación inválido
+        404:
+          description: Usuario no encontrado
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Usuario no encontrado
+  /pokemon/{nombre}:
+    get:
+      tags: 
+        - pokemon
+      summary: Obtener los tipos de un Pokémon por nombre
+      description: Endpoint para obtener información de un Pokémon por su nombre.
+      parameters:
+        - name: nombre
+          in: path
+          required: true
+          type: string
+          example: ditto
+      responses:
+        200:
+          description: Información del Pokémon obtenida exitosamente
+          schema:
+            type: object
+            properties:
+              pokemon:
+                type: string
+                example: ditto
+              tipos:
+                type: array
+                items:
+                  type: string
+                example: ["normal"]
+        401:
+          description: No tienes acceso
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No tienes acceso a la API
+        404:
+          description: Pokémon no encontrado
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: Pokémon no encontrado
+      security:
+        - BearerAuth: []
+  /random_pokemon/{tipo}:
+    get:
+      tags: 
+        - pokemon
+      summary: Obtener un Pokémon aleatorio por tipo
+      description: Endpoint para obtener un Pokémon aleatorio basado en su tipo.
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          type: string
+          example: fire
+      responses:
+        200:
+          description: Pokémon aleatorio obtenido exitosamente
+          schema:
+            type: object
+            properties:
+              pokemon:
+                type: string
+                example: charmander
+              tipo:
+                type: string
+                example: fire
+        401:
+          description: No tienes acceso
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No tienes acceso a la API
+        404:
+          description: No se encontraron Pokémon del tipo especificado
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No se encontraron Pokémon del tipo especificado
+      security:
+        - BearerAuth: []
+  /pokemon_long_name/{tipo}:
+    get:
+      tags: 
+        - pokemon
+      summary: Obtener un Pokémon con el nombre más largo por tipo
+      description: Endpoint para obtener el Pokémon con el nombre más largo basado en su tipo.
+      parameters:
+        - name: tipo
+          in: path
+          required: true
+          type: string
+          example: fire
+      responses:
+        200:
+          description: Pokémon con el nombre más largo obtenido exitosamente
+          schema:
+            type: object
+            properties:
+              pokemon:
+                type: string
+                example: charmander
+              tipo:
+                type: string
+                example: fire
+        401:
+          description: No tienes acceso
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No tienes acceso a la API
+        404:
+          description: No se encontraron Pokémon del tipo especificado
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No se encontraron Pokémon del tipo especificado
+      security:
+        - BearerAuth: []
+  /random_better_pokemon/{ubicacion}:
+    get:
+      tags: 
+        - pokemon
+      summary: Obtener un Pokémon aleatorio mejorado por ubicación
+      description: Endpoint para obtener un Pokémon aleatorio mejorado basado en su ubicación.
+      parameters:
+        - name: ubicacion
+          in: path
+          required: true
+          type: string
+          example: Medellin, Colombia
+      responses:
+        200:
+          description: Pokémon aleatorio mejorado obtenido exitosamente
+          schema:
+            type: object
+            properties:
+              pokemon:
+                type: string
+                example: charmander
+              tipo:
+                type: string
+                example: fire
+              temperatura:
+                type: number
+                example: 30.5
+              ubicacion:
+                type: string
+                example: Medellin, Colombia
+        401:
+          description: No tienes acceso
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No tienes acceso a la API
+        404:
+          description: No se encontraron Pokémon en la ubicación especificada
+          schema:
+            type: object
+            properties:
+              msg:
+                type: string
+                example: No se encontraron Pokémon en la ubicación especificada
+      security:
+        - BearerAuth: []
+
+securityDefinitions:
+  BearerAuth:
+   

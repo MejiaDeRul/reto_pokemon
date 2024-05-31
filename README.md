@@ -24,7 +24,7 @@ Si quieres usar la API en tu ordenador de manera local debes seguir los siguient
 - Listo, ya puedes empezar a usar la API, empezando por registrar el primer usuario
 
 ## Documentacion de la API
-La API tiene un documentacion creada con swagger para mostrar ejemplo de que solicitan y responden los endpoints dentro de esta. Para acceder a esta ingresa -> http://127.0.0.1:5000/docs
+La API tiene un documentacion creada con swagger para mostrar ejemplo de que solicitan y responden los endpoints dentro de esta. Para acceder a esta ingresa -> http://127.0.0.1:5000/apidocs
 
 ## Esquemas de autenticacion
 La API cuenta con 4 esquemas de autenticacion:

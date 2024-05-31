@@ -22,5 +22,14 @@ Si quieres usar la API en tu ordenador de manera local debes seguir los siguient
 - En la terminal ejecutar -> docker compose up
 - Si todo funciona correctamente, en su navegador de preferencia ir a esta direccion -> http://127.0.0.1:5000
 - Listo, ya puedes empezar a usar la API, empezando por registrar el primer usuario
-  
+
+## Documentacion de la API
+La API tiene un documentacion creada con swagger para mostrar ejemplo de que solicitan y responden los endpoints dentro de esta. Para acceder a esta ingresa -> http://127.0.0.1:5000/docs
+
+## Esquemas de autenticacion
+La API cuenta con 4 esquemas de autenticacion:
+- **Registro de usuario y confirmacion de correo electronico**: Al registrar un usuario, se solicitan datos basicos, dentro de ellos un usuario y un correo electronico. Despues de crear una cuenta se envia un link al correo electronico ingresado para verificar y confirmar el correo.
+- **Inicio de sesion con usuario y contraseña**: El usuario ingresa a su cuenta de la API ingresando su usuario y contraseña, los cuales seran verificados para decidir si darle acceso o no.
+- **Verificacion de doble factor**: Luego de verificar los datos al iniciar sesion y ser correctos, se envia un codigo de un solo uso (OTP) al correo del usuario, este mismo debe ingresar el codigo para completar el inicio de sesion.
+- **Token JWT**: Luego de iniciar sesion correctamente, se genera un token JWT (JSON Web Token) para ciertas funcionalidades de la aplicacion.
 
